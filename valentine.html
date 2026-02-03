@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Valentine?</title>
+  <style>
+    :root{
+      --card-bg: rgba(255,255,255,0.14);
+      --card-brd: rgba(255,255,255,0.25);
+      --text: #fff;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+
+    body{
+      overflow: hidden;
+      color: var(--text);
+      background:
+        radial-gradient(1200px 600px at 20% 20%, rgba(255, 95, 162, 0.55), transparent 60%),
+        radial-gradient(1000px 600px at 80% 30%, rgba(255, 0, 106, 0.35), transparent 60%),
+        radial-gradient(900px 700px at 50% 85%, rgba(255, 180, 210, 0.35), transparent 55%),
+        linear-gradient(135deg, #2b0b3f, #7a0f2e);
+      position: relative;
+    }
+
+    /* floating hearts */
+    .hearts {
+      position:absolute; inset:0;
+      pointer-events:none;
+      opacity: 0.35;
+      filter: blur(0.2px);
+    }
+    .heart {
+      position:absolute;
+      font-size: clamp(18px, 2.2vw, 34px);
+      animation: floatUp linear infinite;
+      transform: translateY(110vh);
+      user-select:none;
+    }
+    @keyframes floatUp {
+      from { transform: translateY(110vh) translateX(0); }
+      to   { transform: translateY(-20vh) translateX(var(--drift)); }
+    }
+
+    .center {
+      height: 100%;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .card{
+      width: min(720px, 92vw);
+      padding: clamp(18px, 4vw, 34px);
+      background: var(--card-bg);
+      border: 1px solid var(--card-brd);
+      border-radius: 22px;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 18px 55px rgba(0,0,0,0.35);
+      text-align: center;
+      position: relative;
+    }
+
+    h1{
+      margin: 0 0 14px 0;
+      font-size: clamp(26px, 4.2vw, 44px);
+      letter-spacing: 0.2px;
+      text-shadow: 0 10px 35px rgba(0,0,0,0.45);
+    }
+
+    .sub{
+      margin: 0 0 22px 0;
+      opacity: 0.92;
+      font-size: clamp(14px, 2.2vw, 18px);
+    }
+
+    .arena{
+      position: relative;
+      height: 220px;
+      margin-top: 10px;
+      border-radius: 18px;
+      border: 1px dashed rgba(255,255,255,0.25);
+      background: rgba(0,0,0,0.10);
+      overflow: hidden;
+    }
+
+    .btn{
+      position: absolute;
+      width: 160px;
+      height: 56px;
+      border: 0;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 18px;
+      cursor: pointer;
+      transition: transform 140ms ease, filter 140ms ease;
+      box-shadow: 0 10px 22px rgba(0,0,0,0.25);
+    }
+
+    .btn:active { transform: translateY(1px) scale(0.98); }
+
+    #yesBtn{
+      left: 50%;
+      top: 55%;
+      transform: translate(-120%, -50%) scale(1);
+      background: linear-gradient(135deg, #ff4d88, #ff2f6a);
+      color: #fff;
+    }
+
+    #noBtn{
+      left: 50%;
+      top: 55%;
+      transform: translate(20%, -50%);
+      background: rgba(255,255,255,0.16);
+      border: 1px solid rgba(255,255,255,0.28);
+      color: #fff;
+      backdrop-filter: blur(10px);
+    }
+
+    .footer-note{
+      margin-top: 18px;
+      font-size: 14px;
+      opacity: 0.95;
+    }
+
+    .toast{
+      margin-top: 16px;
+      display: none;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(0,0,0,0.20);
+      border: 1px solid rgba(255,255,255,0.20);
+      backdrop-filter: blur(10px);
+    }
+
+    .toast.show{ display: inline-block; }
+
+    /* small sparkle */
+    .sparkle {
+      position:absolute;
+      inset:-40px;
+      background:
+        radial-gradient(circle at 20% 30%, rgba(255,255,255,0.16), transparent 28%),
+        radial-gradient(circle at 80% 20%, rgba(255,255,255,0.10), transparent 30%),
+        radial-gradient(circle at 40% 80%, rgba(255,255,255,0.10), transparent 35%);
+      pointer-events:none;
+      mix-blend-mode: screen;
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+  <div class="hearts" id="hearts"></div>
+
+  <div class="center">
+    <div class="card">
+      <div class="sparkle"></div>
+      <h1>Hey Anushri, will you be my Valentine? 💘</h1>
+      <p class="sub">Be careful… the “No” button is a little shy.</p>
+
+      <div class="arena" id="arena" aria-label="button play area">
+        <button class="btn" id="yesBtn" type="button">Yes 💖</button>
+        <button class="btn" id="noBtn" type="button">No 🙈</button>
+      </div>
+
+      <div class="toast" id="toast">Yayyy! 💞💞💞</div>
+
+      <div class="footer-note">No is a bit shy with a 😈 emoji</div>
+    </div>
+  </div>
+
+  <script>
+    // ----- floating hearts background -----
+    const heartsWrap = document.getElementById('hearts');
+    const heartEmojis = ["💗","💖","💘","💝","💞","💓","❤️"];
+    const heartCount = 20;
+
+    for (let i = 0; i < heartCount; i++) {
+      const s = document.createElement('div');
+      s.className = 'heart';
+      s.textContent = heartEmojis[Math.floor(Math.random()*heartEmojis.length)];
+      const left = Math.random()*100;
+      const dur = 6 + Math.random()*10;
+      const delay = -Math.random()*dur; // start at different positions
+      const drift = (Math.random()*2 - 1) * 80 + "px";
+      s.style.left = left + "vw";
+      s.style.animationDuration = dur + "s";
+      s.style.animationDelay = delay + "s";
+      s.style.setProperty("--drift", drift);
+      s.style.opacity = (0.15 + Math.random()*0.5).toFixed(2);
+      heartsWrap.appendChild(s);
+    }
+
+    // ----- button chase logic -----
+    const arena = document.getElementById('arena');
+    const yesBtn = document.getElementById('yesBtn');
+    const noBtn  = document.getElementById('noBtn');
+    const toast  = document.getElementById('toast');
+
+    // Place "No" initially (same size as Yes)
+    let yesScale = 1;
+
+    // Utility: clamp
+    const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+
+    function getRect(el){ return el.getBoundingClientRect(); }
+
+    function setNoPosition(px, py){
+      // px,py are within arena coords (top-left origin)
+      const a = getRect(arena);
+      const b = getRect(noBtn);
+
+      // keep button fully inside arena
+      const w = b.width, h = b.height;
+      const x = clamp(px, 0, a.width - w);
+      const y = clamp(py, 0, a.height - h);
+
+      noBtn.style.left = x + "px";
+      noBtn.style.top  = y + "px";
+      noBtn.style.transform = "translate(0,0)";
+    }
+
+    // Convert absolute mouse to arena-local coords
+    function mouseToArena(e){
+      const a = getRect(arena);
+      return { x: e.clientX - a.left, y: e.clientY - a.top };
+    }
+
+    // Initialize "No" to a nice spot (right side)
+    (function initNo(){
+      const a = getRect(arena);
+      // after layout, place it
+      requestAnimationFrame(() => {
+        setNoPosition(a.width * 0.62, a.height * 0.50);
+      });
+    })();
+
+    // Make "No" run away when cursor comes close
+    const dangerRadius = 120;     // how close before it flees
+    const fleeStrength = 95;      // how far it jumps each time
+    const yesGrowStep  = 0.06;    // how much Yes grows per flee
+    const maxYesScale  = 2.4;
+
+    arena.addEventListener('mousemove', (e) => {
+      const m = mouseToArena(e);
+      const a = getRect(arena);
+      const b = getRect(noBtn);
+
+      // No button center (arena coords)
+      const noX = (parseFloat(noBtn.style.left || "0")) + b.width/2;
+      const noY = (parseFloat(noBtn.style.top  || "0")) + b.height/2;
+
+      const dx = noX - m.x;
+      const dy = noY - m.y;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist < dangerRadius) {
+        // grow Yes
+        yesScale = clamp(yesScale + yesGrowStep, 1, maxYesScale);
+        yesBtn.style.transform = `translate(-120%, -50%) scale(${yesScale})`;
+        yesBtn.style.filter = `brightness(${1 + (yesScale-1)*0.15})`;
+
+        // move No away from cursor direction
+        const angle = Math.atan2(dy, dx); // pointing away from mouse
+        const jumpX = Math.cos(angle) * fleeStrength;
+        const jumpY = Math.sin(angle) * fleeStrength;
+
+        const newX = (parseFloat(noBtn.style.left || "0")) + jumpX;
+        const newY = (parseFloat(noBtn.style.top  || "0")) + jumpY;
+
+        setNoPosition(newX, newY);
+      }
+    });
+
+    // If someone tries to click No on touch devices, still flee
+    noBtn.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      yesScale = clamp(yesScale + 0.12, 1, maxYesScale);
+      yesBtn.style.transform = `translate(-120%, -50%) scale(${yesScale})`;
+
+      const a = getRect(arena);
+      const newX = Math.random() * (a.width - noBtn.offsetWidth);
+      const newY = Math.random() * (a.height - noBtn.offsetHeight);
+      setNoPosition(newX, newY);
+    });
+
+    // Yes click celebration
+    yesBtn.addEventListener('click', () => {
+      toast.classList.add('show');
+      toast.textContent = "Yayyy! 💞 You just made my day 💖";
+      // optional: freeze No so it stops moving
+      noBtn.disabled = true;
+      noBtn.style.opacity = 0.6;
+      noBtn.style.cursor = "not-allowed";
+    });
+
+    // In case of resize, keep No inside arena
+    window.addEventListener('resize', () => {
+      const x = parseFloat(noBtn.style.left || "0");
+      const y = parseFloat(noBtn.style.top  || "0");
+      setNoPosition(x, y);
+    });
+  </script>
+</body>
+</html>
